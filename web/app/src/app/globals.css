@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+:root {
+  /* padrão (tema claro) */
+  --background: #ffffff;
+  --foreground: #171717;
+  --muted-foreground: #5a5a5a; /* placeholder/text secundário - light */
+}
+
+/* Tokens do Tailwind v4 do template */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Tema via atributo data */
+[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #009c15;
+  --muted-foreground: #525252;
+}
+
+[data-theme="dark"] {
+  --background: #03141f;
+  --foreground: #3cd10a;
+  --muted-foreground: #9ca3af; /* cinza claro para placeholder no tema escuro */
+}
+
+/* Preferência do sistema como padrão inicial quando data-theme não está definido */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  transition: background-color .2s ease, color .2s ease;
+}
+
+/* Contraste do placeholder */
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted-foreground);
+  opacity: .9; /* melhora legibilidade em light */
+}
+
+/* ===== Animações ===== */
+@keyframes fade-in {
+  from { opacity: 0 }
+  to { opacity: 1 }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(8px); opacity: 0 }
+  to { transform: translateY(0); opacity: 1 }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0 }
+  100% { background-position: 200% 0 }
+}
+
+.animate-fade-in { animation: fade-in .35s ease-out both }
+.animate-slide-up { animation: slide-up .35s ease-out both }
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12), rgba(0,0,0,0.06));
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+.dark .skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+}
+
+.card {
+  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+  border-radius: .5rem;
+  transition: box-shadow .2s ease, border-color .2s ease, transform .2s ease;
+}
+.card:hover { box-shadow: 0 6px 18px rgba(0,0,0,.08) }
+.dark .card:hover { box-shadow: 0 6px 18px rgba(0,0,0,.4) }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .125rem .5rem;
+  border-radius: 9999px;
+  font-size: .75rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 16%, transparent);
+}
