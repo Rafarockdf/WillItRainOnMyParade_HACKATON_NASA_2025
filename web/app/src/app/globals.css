@@ -20,12 +20,14 @@
   --background: #ffffff;
   --foreground: #009c15;
   --muted-foreground: #525252;
+  --background-secondary: #d3d3d3; /* fundo secundário para light */
 }
 
 [data-theme="dark"] {
   --background: #03141f;
   --foreground: #3cd10a;
   --muted-foreground: #9ca3af; /* cinza claro para placeholder no tema escuro */
+  --background-secondary: #112431; /* fundo secundário para dark */
 }
 
 /* Preferência do sistema como padrão inicial quando data-theme não está definido */
