@@ -26,9 +26,11 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen transition-colors bg-[var(--background)] text-[var(--foreground)]`}
-      >
-        <Navbar />
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen transition-colors bg-[var(--background)] text-[var(--foreground)] pt-20`}
+        >
+        <div className="fixed top-0 left-0 w-full z-50">
+          <Navbar />
+        </div>
         {children}
       </body>
     </html>
