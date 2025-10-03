@@ -4,12 +4,31 @@ export interface GeocodeInput {
   numero?: string;
   rua?: string;
   codigoPostal?: string;
-  rawAddress?: string; // endereço completo opcional
+  rawAddress?: string;
+}
+
+export interface GeocodeAPIResultItem {
+  formatted_address?: string;
+  geometry?: {
+    location?: { lat?: number; lng?: number };
+  };
+  [k: string]: unknown;
+}
+
+export interface GeocodeAPIResult {
+  status: string;
+  results?: GeocodeAPIResultItem[]; 
+  result?: GeocodeAPIResultItem[];  
+  data?: { results?: GeocodeAPIResultItem[]; result?: GeocodeAPIResultItem[] };
+  [k: string]: unknown;
 }
 
 export interface GeocodeResult {
   address: string;
-  data: unknown; 
+  formattedAddress?: string;
+  lat?: number;
+  lng?: number;
+  raw: GeocodeAPIResult;
 }
 
 function buildAddress({ cidade, pais, numero, rua, codigoPostal, rawAddress }: GeocodeInput): string {
@@ -35,6 +54,27 @@ export async function geocodeAddress(input: GeocodeInput): Promise<GeocodeResult
 
   const res = await fetch(url.toString(), { cache: "no-store" });
   if (!res.ok) throw new Error(`Falha geocode (${res.status})`);
-  const data = await res.json();
-  return { address, data };
+  const data: GeocodeAPIResult = await res.json();
+
+  // Fallback: unificar possíveis arrays
+  const candidates = data.results
+    ?? data.result
+    ?? data.data?.results
+    ?? data.data?.result
+    ?? [];
+
+  const first = Array.isArray(candidates) ? candidates[0] : undefined;
+  const lat = first?.geometry?.location?.lat;
+  const lng = first?.geometry?.location?.lng;
+
+  // DEBUG (remover depois)
+  console.log("[geocodeAddress] status:", data.status, "items:", Array.isArray(candidates) ? candidates.length : 0, "lat?", lat, "lng?", lng);
+
+  return {
+    address,
+    formattedAddress: first?.formatted_address,
+    lat,
+    lng,
+    raw: data,
+  };
 }
