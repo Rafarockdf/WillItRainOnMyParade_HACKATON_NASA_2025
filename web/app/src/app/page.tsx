@@ -1,6 +1,5 @@
 'use client';
 
-import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { SignUpSchema, signUpSchema } from "./_schemas/auth-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,8 +15,36 @@ export default function Home() {
     resolver: zodResolver(signUpSchema)
   });
 
-  function onSubmit(payload: SignUpSchema) {
-    console.log("enviado", payload);
+  async function onSubmit(payload: SignUpSchema) {
+    // Mapear para campos aceitos pela rota (/api/geocode) -> cidade, rua, numero, codigoPostal, pais
+    const body = {
+      cidade: payload.cidade,
+      rua: payload.rua,
+      numero: payload.numero,
+      codigoPostal: payload.cep,
+      pais: payload.pais,
+      // estado mantido apenas se quiser usar depois, a API atual não o consome separadamente
+      estado: payload.estado,
+    };
+    
+    const dataForm = {
+      date: payload.date,
+      hour: payload.hour
+    }
+
+    sessionStorage.setItem("eventDateData", JSON.stringify(dataForm));
+
+    const result = await fetch("/api/geocode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!result.ok) {
+      console.error("Erro ao enviar dados:", result.statusText);
+      return;
+    }
+    const json = await result.json();
+    sessionStorage.setItem("locationData", JSON.stringify(json));
     router.push("/forecast");
   }
 
@@ -90,6 +117,13 @@ export default function Home() {
           </div>
           <div>
             <input
+              placeholder="Digite o país" {...register("pais")}
+              className="border border-gray-300 rounded-xl px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {errors?.pais && <p className="text-red-500 text-sm mt-1">{errors?.pais?.message}</p>}
+          </div>
+          <div>
+            <input
               placeholder="Digite o número" {...register("numero")}
               className="border border-gray-300 rounded-xl px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -101,6 +135,22 @@ export default function Home() {
               className="border border-gray-300 rounded-xl px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {errors?.cep && <p className="text-red-500 text-sm mt-1">{errors?.cep?.message}</p>}
+          </div>
+          <div>
+            <input
+              type="date"
+              placeholder="Data do evento" {...register("date")}
+              className="border border-gray-300 rounded-xl px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {errors?.date && <p className="text-red-500 text-sm mt-1">{errors?.date?.message}</p>}
+          </div>
+          <div>
+            <input
+              type="time"
+              placeholder="Hora do evento" {...register("hour")}
+              className="border border-gray-300 rounded-xl px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {errors?.hour && <p className="text-red-500 text-sm mt-1">{errors?.hour?.message}</p>}
           </div>
           <div>
             <button
