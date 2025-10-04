@@ -18,16 +18,18 @@
 /* Tema via atributo data */
 [data-theme="light"] {
   --background: #ffffff;
-  --foreground: #009c15;
+  --foreground: #000000;
   --muted-foreground: #525252;
-  --background-secondary: #d3d3d3; /* fundo secundário para light */
+  --background-secondary: #d1e7ff; /* fundo secundário para light */
+  --background-nav: #d1e7ff;
 }
 
 [data-theme="dark"] {
-  --background: #03141f;
-  --foreground: #3cd10a;
+  --background:#0052a3 ;
+  --foreground: #ffffff;
   --muted-foreground: #9ca3af; /* cinza claro para placeholder no tema escuro */
   --background-secondary: #112431; /* fundo secundário para dark */
+  --background-nav: #112431 ;
 }
 
 /* Preferência do sistema como padrão inicial quando data-theme não está definido */
