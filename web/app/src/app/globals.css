@@ -25,11 +25,29 @@
 }
 
 [data-theme="dark"] {
-  --background:#0052a3 ;
-  --foreground: #ffffff;
-  --muted-foreground: #9ca3af; /* cinza claro para placeholder no tema escuro */
-  --background-secondary: #112431; /* fundo secundário para dark */
-  --background-nav: #112431 ;
+  /* Option 2: Grafite + Azul elétrico */
+  --background: #111315; /* base profunda quase neutra */
+  --foreground: #ECEDEE; /* texto principal alto contraste */
+  --muted-foreground: #6B7280; /* cinza médio para placeholders e hints */
+  --background-secondary: #1B1F22; /* blocos / cards */
+  --background-nav: #161A1D; /* navbar / header */
+  --border-color: #242A30; /* bordas sutis */
+  --accent: #3B82F6; /* azul primário */
+  --accent-hover: #2563EB; /* hover/foco */
+  --danger: #DC2626; /* ações destrutivas */
+  --success: #16A34A; /* feedback positivo */
+  --warning: #F59E0B; /* avisos */
+  --ring-color: var(--accent);
+}
+
+/* Utility tokens (light fallback if wanted later) */
+:root {
+  --accent: var(--accent, #2563EB);
+  --accent-hover: var(--accent-hover, #1D4ED8);
+  --danger: var(--danger, #DC2626);
+  --success: var(--success, #16A34A);
+  --warning: var(--warning, #F59E0B);
+  --ring-color: var(--ring-color, var(--accent));
 }
 
 /* Preferência do sistema como padrão inicial quando data-theme não está definido */
@@ -83,12 +101,13 @@ textarea::placeholder {
 }
 
 .card {
-  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
-  border-radius: .5rem;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color, color-mix(in srgb, var(--foreground) 12%, transparent));
+  border-radius: .75rem;
   transition: box-shadow .2s ease, border-color .2s ease, transform .2s ease;
 }
-.card:hover { box-shadow: 0 6px 18px rgba(0,0,0,.08) }
-.dark .card:hover { box-shadow: 0 6px 18px rgba(0,0,0,.4) }
+.card:hover { box-shadow: 0 6px 18px rgba(0,0,0,.18) }
+.dark .card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.55) }
 
 .chip {
   display: inline-flex;
@@ -97,5 +116,48 @@ textarea::placeholder {
   padding: .125rem .5rem;
   border-radius: 9999px;
   font-size: .75rem;
-  border: 1px solid color-mix(in srgb, var(--foreground) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--foreground) 20%, transparent);
 }
+
+/* Buttons (basic utility) */
+.btn-primary {
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  color: #fff;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  font-weight: 500;
+  font-size: .875rem;
+  display: inline-flex;
+  gap: .5rem;
+  align-items: center;
+  justify-content: center;
+  transition: background .25s ease, box-shadow .25s ease, transform .15s ease;
+}
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-primary:active { transform: translateY(1px); }
+.btn-primary:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 2px; }
+
+.btn-outline {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  font-size: .875rem;
+  font-weight: 500;
+  display: inline-flex;
+  gap: .5rem;
+  align-items: center;
+  transition: background .2s ease, color .2s ease;
+}
+.btn-outline:hover { background: color-mix(in srgb, var(--accent) 15%, transparent); }
+.btn-outline:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 2px; }
+
+.badge-success { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
+.badge-danger { background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
+.badge-warning { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); }
+
+/* Scrollbar refine (dark) */
+.dark ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+.dark ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--accent) 65%, transparent); }
