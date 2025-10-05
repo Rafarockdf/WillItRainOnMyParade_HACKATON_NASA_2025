@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify, request
+import pandas as pd
 from app.services.collect_api_giovanni import colect_variables
 from app.services.transform import transform
+from app.services.modelos import modelo
 # A função de load não é mais necessária se o objetivo é apenas retornar o JSON
 # from app.services.load import load_data_to_db 
 
@@ -18,8 +20,9 @@ def collect_and_load_data():
     try:
         lat = data['lat']
         lon = data['lon']
-        time_start = data['time_start']
-        time_end = data['time_end']
+        date = data['datetime']
+        time_start = "2020-01-01T00:00:00"
+        time_end = "2025-09-28T00:00:00"
         lista_merra = ['M2I1NXLFO_5_12_4_QLML', 'M2I1NXLFO_5_12_4_TLML', 'M2I1NXLFO_5_12_4_SPEEDLML']
         lista_merra2 = ['M2T1NXFLX_5_12_4_PRECTOTCORR', 'M2T1NXSLV_5_12_4_TQV']
     except KeyError as e:
@@ -36,17 +39,19 @@ def collect_and_load_data():
         # 3. Converte o DataFrame para uma lista de dicionários
         # O formato 'records' cria uma lista, onde cada item é um dicionário representando uma linha.
         result_data = df_final.to_dict(orient='records')
-
+        print('Sucesso sem mod')
+        date = pd.to_datetime('2024-05-01 00:00:00')
+        forecast = modelo(df_final,date)
+        print('Sucesso com mod')
         # 4. Return success response com os dados do DataFrame
         return jsonify({
             "message": "Data processed successfully!",
             "parameters_received": {
                 "lat": lat,
                 "lon": lon,
-                "time_start": time_start,
-                "time_end": time_end
+                "time_start": date,
             },
-            "data": result_data  # <-- Adiciona os dados do DataFrame na resposta JSON
+            "data": forecast  # <-- Adiciona os dados do DataFrame na resposta JSON
         }), 200
         
     except Exception as e:

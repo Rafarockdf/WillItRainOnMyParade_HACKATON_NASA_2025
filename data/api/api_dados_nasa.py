@@ -1,14 +1,13 @@
-from flask import Flask, render_template_string, request, jsonify
+from flask import Flask, render_template_string, request
 import requests
 import json
 
-# Cria a nova aplicação Flask que atuará como cliente
 app = Flask(__name__)
 
-# URL da sua API de dados original (que deve estar rodando na porta 5000)
-DATA_API_URL = "http://127.0.0.1:5000/api/collect"
+# URL da sua API original (que deve estar rodando na porta 8000, segundo seu código anterior)
+DATA_API_URL = "http://127.0.0.1:8000/api/collect"
 
-# Template HTML para o formulário de entrada
+# Template HTML atualizado para datetime
 HTML_FORM = """
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -22,14 +21,14 @@ HTML_FORM = """
         h1 { color: #0b3d91; text-align: center; }
         form { display: flex; flex-direction: column; gap: 15px; }
         label { font-weight: bold; }
-        input[type="text"], input[type="date"] { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+        input[type="text"], input[type="datetime-local"] { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
         input[type="submit"] { background-color: #0056b3; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background-color 0.3s; }
         input[type="submit"]:hover { background-color: #004494; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Buscar Dados Climáticos da NASA</h1>
+        <h1>Buscar Previsão Climática</h1>
         <form action="/get-nasa-data" method="post">
             <label for="lat">Latitude:</label>
             <input type="text" id="lat" name="lat" value="-16.34" required>
@@ -37,11 +36,8 @@ HTML_FORM = """
             <label for="lon">Longitude:</label>
             <input type="text" id="lon" name="lon" value="-46.88" required>
             
-            <label for="start_date">Data de Início:</label>
-            <input type="date" id="start_date" name="start_date" value="2024-01-01" required>
-            
-            <label for="end_date">Data de Fim:</label>
-            <input type="date" id="end_date" name="end_date" value="2024-01-05" required>
+            <label for="datetime">Data e Hora (UTC):</label>
+            <input type="datetime-local" id="datetime" name="datetime" value="2024-01-03T15:00" required>
             
             <input type="submit" value="Buscar Dados">
         </form>
@@ -50,7 +46,6 @@ HTML_FORM = """
 </html>
 """
 
-# Template HTML para exibir os resultados
 HTML_RESULTS = """
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -73,50 +68,41 @@ HTML_RESULTS = """
     </div>
 </body>
 </html>
-
 """
 
 @app.route('/')
 def index():
-    """ Rota principal que exibe o formulário HTML. """
     return render_template_string(HTML_FORM)
 
 @app.route('/get-nasa-data', methods=['POST'])
 def get_nasa_data():
-    """ Rota que recebe os dados do formulário, chama a outra API e exibe o resultado. """
     try:
-        # 1. Pega os dados do formulário enviado pelo usuário
-        lat = request.form['lat']
-        lon = request.form['lon']
-        start_date = request.form['start_date']
-        end_date = request.form['end_date']
+        # Coleta os dados do formulário
+        lat = float(request.form['lat'])
+        lon = float(request.form['lon'])
+        datetime_value = request.form['datetime']
 
-        # 2. Monta o corpo (payload) da requisição no formato JSON que a outra API espera
+        # Monta o JSON para a API principal
         payload = {
-            "lat": float(lat),
-            "lon": float(lon),
-            "time_start": f"{start_date}T00:00:00",
-            "time_end": f"{end_date}T00:00:00"
+            "lat": lat,
+            "lon": lon,
+            "datetime": f"{datetime_value}:00"  # garante segundos
         }
 
-        # 3. Faz a requisição POST para a sua API de dados
+        # Envia a requisição POST
         response = requests.post(DATA_API_URL, json=payload)
-        response.raise_for_status()  # Lança um erro se a resposta não for 2xx
+        response.raise_for_status()
 
-        # 4. Pega o JSON da resposta e o formata para exibição
+        # Formata resposta
         response_data = response.json()
         formatted_json = json.dumps(response_data, indent=4, ensure_ascii=False)
-        
-        # 5. Renderiza a página de resultados com os dados formatados
+
         return render_template_string(HTML_RESULTS, data=formatted_json)
 
     except requests.exceptions.RequestException as e:
-        # Trata erros de conexão ou da API de dados
         return f"<h1>Erro ao contatar a API de dados</h1><p>{e}</p><a href='/'>Voltar</a>", 500
     except Exception as e:
-        # Trata outros erros inesperados
-        return f"<h1>Ocorreu um erro inesperado</h1><p>{e}</p><a href='/'>Voltar</a>", 500
+        return f"<h1>Erro inesperado</h1><p>{e}</p><a href='/'>Voltar</a>", 500
 
 if __name__ == '__main__':
-    # Roda esta aplicação em uma porta diferente (5001) para não conflitar com a sua API original (5000)
     app.run(port=5001, debug=True)

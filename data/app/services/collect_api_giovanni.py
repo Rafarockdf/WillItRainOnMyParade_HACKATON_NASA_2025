@@ -53,6 +53,7 @@ def colect_variables(list_variables, lat, lon, time_start, time_end):
                     df_completed = df_new
                 else:
                     df_completed = pd.merge(df_completed, df_new, on="Timestamp", how="inner")
+                    
             except Exception as e:
                 print(f"Error processing variable for {lat},{lon}: {e}")
 
