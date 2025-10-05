@@ -25,3 +25,5 @@ def mapeamento():
 
     return coords, is_land_mask
 
+mapeamento()
+# %%

@@ -16,10 +16,6 @@ lat_c = np.array([i for i in lat_l for j in lon_l])
 lon_c = np.array([j for i in lat_l for j in lon_l])
 
 
-america_mask = [True if (i < -20) else False for i in lon_c]
-lon_c = lon_c[america_mask]
-lat_c = lat_c[america_mask]
-
 not_ice = [False if i < -60 else True for i in lat_c]
 lon_c = lon_c[not_ice]
 lat_c = lat_c[not_ice]
@@ -42,3 +38,5 @@ lon_land = lon_c[is_land_mask]
 
 
 
+
+# %%

@@ -15,7 +15,7 @@ def transform(df_merra,df_merra2):
     df_completed['Timestamp_Local'] = df_completed.apply(
     lambda row: row['Timestamp'] + timezone,
     axis=1
-)
+    )
     print('Sucesso Transformação')
     print(df_completed)
     return df_completed

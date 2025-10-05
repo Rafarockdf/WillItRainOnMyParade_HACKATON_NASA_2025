@@ -1,103 +1,97 @@
+from app.services.store_forecast import buscar_previsao_no_banco, salvar_previsao_no_banco, salvar_modelo_no_banco, buscar_modelo_no_banco, salvar_dados_historicos
 import pandas as pd
 from prophet import Prophet
 import json as js
 
+def existe_dados_historicos(lat, lon):
+    from app.services.store_forecast import get_db_connection
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT 1 FROM historico_localizacao WHERE lat=%s AND lon=%s LIMIT 1
+        """,
+        (lat, lon)
+    )
+    existe = cursor.fetchone() is not None
+    cursor.close()
+    conn.close()
+    return existe
+
 def modelo(df_completed,date):
-    
-    print('entrei')
-    print(df_completed.head(1))
-    print(df_completed.info())
-    df_prophet_temp = df_completed.rename(columns={'Timestamp_Local': 'ds', 'TLML': 'y'})
-    print(df_prophet_temp)
-    print('Passo1')
-    df_prophet_temp = df_prophet_temp[['ds', 'y']]
-    print('Passo2')
-    df_prophet_humidity  = df_completed.rename(columns={'Timestamp_Local': 'ds', 'QLML': 'y'})
-    print('Passo3')
-    df_prophet_humidity = df_prophet_humidity[['ds', 'y']]
-    print('Passo4')
-    df_prophet_wind = df_completed.rename(columns={'Timestamp_Local': 'ds', 'SPEEDLML': 'y'})
-    print('Passo5')
-    df_prophet_wind = df_prophet_wind[['ds', 'y']]
-    print('Passo6')
-    df_prophet_precipitation = df_completed.rename(columns={'Timestamp_Local': 'ds', 'PRECTOTCORR': 'y'})
-    print('Passo7')
-    df_prophet_precipitation = df_prophet_precipitation[['ds', 'y']]
-    print('Passo8')
+    def get_or_train_model(tipo, df):
+        modelo = modelos_treinados.get(tipo)
+        if modelo:
+            modelo.fit(df)
+        else:
+            modelo = Prophet(
+                interval_width=0.95,
+                seasonality_mode='multiplicative',
+                daily_seasonality=True,
+                weekly_seasonality=True,
+                yearly_seasonality=True
+            )
+            modelo.add_seasonality(name='mensal', period=30.5, fourier_order=5)
+            modelo.add_seasonality(name='diaria', period=24, fourier_order=10)
+            modelo.fit(df)
+        return modelo
+    print('Entrei no modelo')
+    lat = df_completed['lat'].iloc[0]
+    lon = df_completed['lon'].iloc[0]
+    df_local = df_completed[(df_completed['lat'] == lat) & (df_completed['lon'] == lon)].copy()
 
-    df_prophet_water = df_completed.rename(columns={'Timestamp_Local': 'ds', 'TQV': 'y'})
-    print('Passo9')
-    df_prophet_water = df_prophet_water[['ds', 'y']]
-    print('Sucesso1')
-    
-    model_temp = Prophet(
-        interval_width=0.95,      
-        seasonality_mode='multiplicative',
-        daily_seasonality=True,
-        weekly_seasonality=True,
-        yearly_seasonality=True
-    )
-    model_humidity = Prophet(
-        interval_width=0.95,      
-        seasonality_mode='multiplicative',
-        daily_seasonality=True,
-        weekly_seasonality=True,
-        yearly_seasonality=True
-    )
-    model_wind = Prophet(
-        interval_width=0.95,      
-        seasonality_mode='multiplicative',
-        daily_seasonality=True,
-        weekly_seasonality=True,
-        yearly_seasonality=True
-    )
-    model_preciptation = Prophet(
-        interval_width=0.95,      
-        seasonality_mode='multiplicative',
-        daily_seasonality=True,
-        weekly_seasonality=True,
-        yearly_seasonality=True
-    )
-    model_water = Prophet(
-        interval_width=0.95,      
-        seasonality_mode='multiplicative',
-        daily_seasonality=True,
-        weekly_seasonality=True,
-        yearly_seasonality=True
-    )
+    # NOVA LÓGICA: verifica se já existem dados históricos para lat/lon
+    if existe_dados_historicos(lat, lon):
+        print('Dados históricos já existem para esta localização. Apenas faz previsões.')
+        modelos_treinados = {}
+        for tipo in ["temperature", "humidity", "wind_speed", "rain", "water_vapor"]:
+            modelo_carregado = buscar_modelo_no_banco(lat, lon, tipo)
+            if modelo_carregado:
+                print(f"Reaproveitando modelo Prophet treinado para {tipo}...")
+                modelos_treinados[tipo] = modelo_carregado
+            else:
+                modelos_treinados[tipo] = None
+        df_prophet_temp = df_local.rename(columns={'Timestamp_Local': 'ds', 'TLML': 'y'})[['ds', 'y', 'lat', 'lon']]
+        df_prophet_humidity = df_local.rename(columns={'Timestamp_Local': 'ds', 'QLML': 'y'})[['ds', 'y', 'lat', 'lon']]
+        df_prophet_wind = df_local.rename(columns={'Timestamp_Local': 'ds', 'SPEEDLML': 'y'})[['ds', 'y', 'lat', 'lon']]
+        df_prophet_precipitation = df_local.rename(columns={'Timestamp_Local': 'ds', 'PRECTOTCORR': 'y'})[['ds', 'y', 'lat', 'lon']]
+        df_prophet_water = df_local.rename(columns={'Timestamp_Local': 'ds', 'TQV': 'y'})[['ds', 'y', 'lat', 'lon']]
+        model_temp = modelos_treinados["temperature"] or get_or_train_model("temperature", df_prophet_temp)
+        model_humidity = modelos_treinados["humidity"] or get_or_train_model("humidity", df_prophet_humidity)
+        model_wind = modelos_treinados["wind_speed"] or get_or_train_model("wind_speed", df_prophet_wind)
+        model_preciptation = modelos_treinados["rain"] or get_or_train_model("rain", df_prophet_precipitation)
+        model_water = modelos_treinados["water_vapor"] or get_or_train_model("water_vapor", df_prophet_water)
+    else:
+        print('Dados históricos não existem para esta localização. Salvando e treinando modelos...')
+        salvar_dados_historicos(lat, lon, df_local)
+        modelos_treinados = {}
+        for tipo in ["temperature", "humidity", "wind_speed", "rain", "water_vapor"]:
+            modelos_treinados[tipo] = None
+        df_prophet_temp = df_local.rename(columns={'Timestamp_Local': 'ds', 'TLML': 'y'})[['ds', 'y', 'lat', 'lon']]
+        df_prophet_humidity = df_local.rename(columns={'Timestamp_Local': 'ds', 'QLML': 'y'})[['ds', 'y', 'lat', 'lon']]
+        df_prophet_wind = df_local.rename(columns={'Timestamp_Local': 'ds', 'SPEEDLML': 'y'})[['ds', 'y', 'lat', 'lon']]
+        df_prophet_precipitation = df_local.rename(columns={'Timestamp_Local': 'ds', 'PRECTOTCORR': 'y'})[['ds', 'y', 'lat', 'lon']]
+        df_prophet_water = df_local.rename(columns={'Timestamp_Local': 'ds', 'TQV': 'y'})[['ds', 'y', 'lat', 'lon']]
+        model_temp = get_or_train_model("temperature", df_prophet_temp)
+        model_humidity = get_or_train_model("humidity", df_prophet_humidity)
+        model_wind = get_or_train_model("wind_speed", df_prophet_wind)
+        model_preciptation = get_or_train_model("rain", df_prophet_precipitation)
+        model_water = get_or_train_model("water_vapor", df_prophet_water)
+        salvar_modelo_no_banco(lat, lon, "temperature", model_temp)
+        salvar_modelo_no_banco(lat, lon, "humidity", model_humidity)
+        salvar_modelo_no_banco(lat, lon, "wind_speed", model_wind)
+        salvar_modelo_no_banco(lat, lon, "rain", model_preciptation)
+        salvar_modelo_no_banco(lat, lon, "water_vapor", model_water)
     print('Sucesso2')
-    model_temp.add_seasonality(name='mensal', period=30.5, fourier_order=5)
-    model_temp.add_seasonality(name='diaria', period=24, fourier_order=10)
-
-    model_humidity.add_seasonality(name='mensal', period=30.5, fourier_order=5)
-    model_humidity.add_seasonality(name='diaria', period=24, fourier_order=10)
-
-    model_wind.add_seasonality(name='mensal', period=30.5, fourier_order=5)
-    model_wind.add_seasonality(name='diaria', period=24, fourier_order=10)
-
-    model_preciptation.add_seasonality(name='mensal', period=30.5, fourier_order=5)
-    model_preciptation.add_seasonality(name='diaria', period=24, fourier_order=10)
-
-    model_water.add_seasonality(name='mensal', period=30.5, fourier_order=5)
-    model_water.add_seasonality(name='diaria', period=24, fourier_order=10)
-    print('Sucesso3')
-    print("Iniciando o treinamento do modelo...")
-    model_temp.fit(df_prophet_temp)
-    model_humidity.fit(df_prophet_humidity)
-    model_wind.fit(df_prophet_wind)
-    model_preciptation.fit(df_prophet_precipitation)
-    model_water.fit(df_prophet_water)
-    print("Treinamento concluído!")
-    print("\n")
     print("Realizando as previsões...")
     future = model_temp.make_future_dataframe(periods=2920, freq='H')
-
+    future['lat'] = lat
+    future['lon'] = lon
     forecast_temp = model_temp.predict(future)
     forecast_humidity = model_humidity.predict(future)
     forecast_wind = model_wind.predict(future)
     forecast_preciptation = model_preciptation.predict(future)
     forecast_water = model_water.predict(future)
-
     print("Previsões geradas!")
     print("\n")
     # --- Temperatura ---
@@ -164,5 +158,6 @@ def modelo(df_completed,date):
     }
 
     json_output = build_forecast_json(date, forecasts_dict, df_completed)
-
+    # Salva a previsão no banco para reutilização futura
+    salvar_previsao_no_banco(lat, lon, date, json_output)
     return json_output

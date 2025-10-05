@@ -21,7 +21,7 @@ def collect_and_load_data():
         lat = data['lat']
         lon = data['lon']
         date = data['datetime']
-        time_start = "2024-01-01T00:00:00"
+        time_start = "2020-01-01T00:00:00"
         time_end = "2025-09-28T00:00:00"
         lista_merra = ['M2I1NXLFO_5_12_4_QLML', 'M2I1NXLFO_5_12_4_TLML', 'M2I1NXLFO_5_12_4_SPEEDLML']
         lista_merra2 = ['M2T1NXFLX_5_12_4_PRECTOTCORR', 'M2T1NXSLV_5_12_4_TQV']
@@ -30,6 +30,7 @@ def collect_and_load_data():
 
     try:
         # 1. Collect Data
+        print('Iniciando coleta de dados...')
         df_merra = colect_variables(lista_merra, lat, lon, time_start, time_end)
         df_merra2 = colect_variables(lista_merra2, lat, lon, time_start, time_end)
         
