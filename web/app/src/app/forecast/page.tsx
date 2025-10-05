@@ -8,6 +8,7 @@ import { MetricSelector } from '../../components/forecast/MetricSelector';
 import { DetailedMetric } from '../../components/forecast/DetailedMetric';
 import { MiniSparkline } from '../../components/forecast/MiniSparkline';
 import { cx } from '../../lib/cx';
+import { DownloadIcon } from 'lucide-react';
 
 interface StoredLocation {
   lat?: number; lng?: number; formattedAddress?: string; cidade?: string; pais?: string;
@@ -29,6 +30,36 @@ export default function Resultado() {
   const [forecast, setForecast] = useState<NormalizedForecast | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
   const [sourceTag, setSourceTag] = useState<string | null>(null);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+
+  const handleDownload = () => {
+    setShowDownloadModal(true);
+  };
+
+  const handleDownloadConfirm = async () => {
+    try {
+        const data = sessionStorage.getItem('forecastData');
+        if (!data) throw new Error('No forecast data available for download.');
+        const res = await fetch('/api/download', { method: 'POST', body: data });
+        if (!res.ok) throw new Error(`Erro ao baixar: ${res.status}`);
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'forecast-data.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setShowDownloadModal(false);
+    } catch (error) {
+        console.error('Erro ao baixar CSV:', error);
+        setShowDownloadModal(false);
+    }
+  };
+
+  const handleDownloadCancel = () => {
+    setShowDownloadModal(false);
+  };
 
   useEffect(() => {
     const raw = sessionStorage.getItem('eventData') || sessionStorage.getItem('locationData');
@@ -133,6 +164,17 @@ export default function Resultado() {
               {sourceTag && sourceTag !== 'backend' && <Badge tone="danger">Mock</Badge>}
               {sourceTag === 'backend' && <Badge tone="success">Real</Badge>}
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+            <button
+                onClick={handleDownload}
+                className={cx(
+                'relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold tracking-wide transition border backdrop-blur-sm',
+                'bg-[var(--accent)] text-[var(--accent)] border-[var(--accent)] shadow hover:bg-[var(--accent-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2',
+                'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[var(--accent)]'
+              )}
+            >
+                <DownloadIcon className="h-4 w-4" />
+            </button>
             <button
               onClick={handleExplain}
               disabled={loadingExplain || !eventData}
@@ -150,6 +192,7 @@ export default function Resultado() {
                   : 'Explicar com IA'
               }
             </button>
+            </div>
           </div>
           {(!eventData || error) && (
             <div className="flex flex-wrap gap-2 text-xs">
@@ -190,6 +233,44 @@ export default function Resultado() {
       <footer className="pb-10 text-center text-[10px] text-[var(--muted-foreground)]">
         Interface protótipo • Hackathon NASA 2025 • Ajustes visuais pendentes da API real
       </footer>
+
+      {/* Modal de Confirmação de Download */}
+      {showDownloadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
+              Confirmar Download
+            </h3>
+            <div className="space-y-3 mb-6 text-sm text-gray-600 dark:text-gray-300">
+              <p className="font-medium">O arquivo conterá:</p>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Dados das variáveis NASA (MERRA-2)</li>
+                <li>Previsões meteorológicas para o evento</li>
+                <li>Informações de localização e data</li>
+                <li>Métricas de confiança e intervalos</li>
+              </ul>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                Formato: CSV • Tamanho estimado: ~10-50 KB
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleDownloadCancel}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDownloadConfirm}
+                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition-colors flex items-center gap-2"
+              >
+                <DownloadIcon className="h-4 w-4" />
+                Baixar CSV
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
