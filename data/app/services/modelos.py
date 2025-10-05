@@ -133,13 +133,24 @@ def modelo(df_completed,date):
             predicted = df_forecast.loc[df_forecast['ds'] == date_obj, 'yhat'].values[0]
             interval_90 = df_forecast.loc[df_forecast['ds'] == date_obj, ['yhat_lower','yhat_upper']].values[0].tolist()
             
-            day_mask = df_forecast['ds'].dt.date == date_obj.date()
-            series = df_forecast.loc[day_mask, 'yhat'].values.tolist()
-            
+            day_mask = forecast_temp['ds'].dt.date == date_obj.date()
+
+            # Seleciona os timestamps e valores
+            timestamps = forecast_temp.loc[day_mask, 'ds']
+            values = forecast_temp.loc[day_mask, 'yhat'].values.tolist()
+
+            # Formata os timestamps para string
+            timestamps_formatted = [ts.strftime("%Y-%m-%d %H:%M:%S") for ts in timestamps]
+
+            # Cria o dicionário final
+            series_df = {
+                "timestamp": timestamps_formatted,
+                "values": values
+            }
             output['forecast'][var_name] = {
                 'predicted': predicted,
                 'interval_90': interval_90,
-                'series': series
+                'series': series_df
             }
         
         return output

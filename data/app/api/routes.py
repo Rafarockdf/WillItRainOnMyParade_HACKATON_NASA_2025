@@ -21,7 +21,7 @@ def collect_and_load_data():
         lat = data['lat']
         lon = data['lon']
         date = data['datetime']
-        time_start = "2020-01-01T00:00:00"
+        time_start = "2024-01-01T00:00:00"
         time_end = "2025-09-28T00:00:00"
         lista_merra = ['M2I1NXLFO_5_12_4_QLML', 'M2I1NXLFO_5_12_4_TLML', 'M2I1NXLFO_5_12_4_SPEEDLML']
         lista_merra2 = ['M2T1NXFLX_5_12_4_PRECTOTCORR', 'M2T1NXSLV_5_12_4_TQV']
@@ -43,6 +43,7 @@ def collect_and_load_data():
         date = pd.to_datetime('2024-05-01 00:00:00')
         forecast = modelo(df_final,date)
         print('Sucesso com mod')
+        print(forecast)
         # 4. Return success response com os dados do DataFrame
         return jsonify({
             "message": "Data processed successfully!",
