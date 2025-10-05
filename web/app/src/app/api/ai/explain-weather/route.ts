@@ -8,7 +8,9 @@ const MODEL = process.env.GROQ_MODEL || "llama-3.1-70b-versatile";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+     
     const prompt = buildPromptFromForecast(body);
+
 
     const response = await fetch(`${BASE_URL}/chat/completions`, {
       method: "POST",

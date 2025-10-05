@@ -19,7 +19,7 @@ export function DetailedMetric({ name, metric }: { name: string; metric: Forecas
   const min = series.length ? Math.min(...series) : metric.interval_90[0];
   const max = series.length ? Math.max(...series) : metric.interval_90[1];
   const statItems = [
-    { k: 'Média', v: `${formatNumber(avg)}${unit}` },
+    { k: 'Probability', v: `95%` },
     { k: 'Mín', v: `${formatNumber(min)}${unit}` },
     { k: 'Máx', v: `${formatNumber(max)}${unit}` },
     { k: 'Pontos', v: series.length ? series.length.toString() : '—' }
@@ -34,7 +34,7 @@ export function DetailedMetric({ name, metric }: { name: string; metric: Forecas
             </span>
             <div className="flex items-baseline gap-3">
               <span className="text-5xl font-bold leading-none tracking-tight select-text">{formatNumber(metric.predicted)}{unit}</span>
-              <span className="text-[11px] font-medium text-[var(--muted-foreground)] whitespace-nowrap">Intervalo 90%: {formatNumber(lo)}–{formatNumber(hi)}{unit}</span>
+              <span className="text-[11px] font-medium text-[var(--muted-foreground)] whitespace-nowrap">Interval 95%: {formatNumber(lo)}–{formatNumber(hi)}{unit}</span>
             </div>
           </div>
           {series.length >= 4 && (

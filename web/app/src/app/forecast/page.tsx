@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import type { NormalizedForecast } from '../../../types/forecast';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -8,7 +8,8 @@ import { MetricSelector } from '../../components/forecast/MetricSelector';
 import { DetailedMetric } from '../../components/forecast/DetailedMetric';
 import { MiniSparkline } from '../../components/forecast/MiniSparkline';
 import { cx } from '../../lib/cx';
-
+import GraphLine from './graph_line';
+import  ClassifyWeather  from './classify_weather';
 interface StoredLocation {
   lat?: number; lng?: number; formattedAddress?: string; cidade?: string; pais?: string;
 }
@@ -68,12 +69,14 @@ export default function Resultado() {
     setLoadingExplain(true);
     setExplanation(null);
     setError(null);
+    const fRaw = sessionStorage.getItem('forecastData');
     const payload = {
       lat: eventData.location?.lat,
       lng: eventData.location?.lng,
       address: eventData.location?.formattedAddress || eventData.location?.cidade,
       date: eventData.form?.date,
       hour: eventData.form?.hour,
+      forecast: fRaw,
     };
     try {
       const res = await fetch('/api/ai/explain-weather', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -104,7 +107,7 @@ export default function Resultado() {
     <main className="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
       <header className="mb-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Resultado</h1>
+          <ClassifyWeather/>
           <p className="text-sm text-[var(--muted-foreground)]">Previsão & insight gerado por IA para o seu evento.</p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -115,6 +118,7 @@ export default function Resultado() {
         </div>
       </header>
 
+    
       {!mounted && loadingUI}
       {mounted && forecast && (
         <section className="mb-12 space-y-6">
@@ -133,15 +137,14 @@ export default function Resultado() {
         {forecast && (
           <Card title="Gráfico Principal" footer="Atualmente apenas temperatura possui série completa; outras métricas exibirão placeholder.">
             <div className="h-60 w-full relative overflow-hidden rounded-lg flex items-center justify-center">
-              {selectedMetric === 'temperature' && forecast.metrics.temperature?.series ? (
-                <div className="w-full h-full flex items-center justify-center">
-                  <MiniSparkline values={(forecast.metrics.temperature.series || []) as number[]} />
-                </div>
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[10px] text-[var(--muted-foreground)]">
-                  <span>Sem série detalhada para {selectedMetric?.replace(/_/g,' ') || '—'}</span>
-                  <span>Quando disponível: curva temporal e estatísticas ampliadas.</span>
-                </div>
+              {/* Chamada dinâmica do gráfico conforme a métrica selecionada */}
+              {selectedMetric && (
+                <GraphLine
+                  key={selectedMetric}
+                  metric={selectedMetric as any}
+                  label={selectedMetric === 'temperature' ? 'Temperatura' : selectedMetric === 'humidity' ? 'Umidade' : selectedMetric === 'rain' ? 'Chuva' : selectedMetric === 'wind_speed' ? 'Vento' : selectedMetric === 'water_vapor' ? 'Vapor de Água' : selectedMetric}
+                  unit={selectedMetric === 'temperature' ? '°C' : selectedMetric === 'humidity' ? '%' : selectedMetric === 'rain' ? 'mm/h' : selectedMetric === 'wind_speed' ? 'km/h' : selectedMetric === 'water_vapor' ? 'mm' : ''}
+                />
               )}
             </div>
           </Card>
