@@ -40,7 +40,6 @@ def collect_and_load_data():
         # O formato 'records' cria uma lista, onde cada item é um dicionário representando uma linha.
         result_data = df_final.to_dict(orient='records')
         print('Sucesso sem mod')
-        date = pd.to_datetime('2024-05-01 00:00:00')
         forecast = modelo(df_final,date)
         print('Sucesso com mod')
         print(forecast)

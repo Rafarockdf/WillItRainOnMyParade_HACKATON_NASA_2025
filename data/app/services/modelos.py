@@ -136,8 +136,8 @@ def modelo(df_completed,date):
             day_mask = forecast_temp['ds'].dt.date == date_obj.date()
 
             # Seleciona os timestamps e valores
-            timestamps = forecast_temp.loc[day_mask, 'ds']
-            values = forecast_temp.loc[day_mask, 'yhat'].values.tolist()
+            timestamps = df_forecast.loc[day_mask, 'ds']
+            values = df_forecast.loc[day_mask, 'yhat'].values.tolist()
 
             # Formata os timestamps para string
             timestamps_formatted = [ts.strftime("%Y-%m-%d %H:%M:%S") for ts in timestamps]
