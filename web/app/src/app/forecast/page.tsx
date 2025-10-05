@@ -1,5 +1,7 @@
 'use client';
 import { useEffect, useState, useMemo } from 'react';
+// Removido fetchForecast direto; a previsão será carregada do sessionStorage futuramente
+import type { NormalizedForecast, ForecastMetric } from '../../../types/forecast';
 
 // Pequena função util local para compor classes sem depender de pacote externo
 function cx(...classes: Array<string | false | null | undefined>) {
@@ -46,13 +48,16 @@ function Badge({ children, tone = 'default' }: { children: React.ReactNode; tone
 }
 
 export default function Resultado() {
-  const [eventData, setEventData] = useState<StoredEventData | null>(null);
+  const [   eventData, setEventData] = useState<StoredEventData | null>(null);
   const [loadingExplain, setLoadingExplain] = useState(false);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  // Forecast carregada do sessionStorage (pre-fetch no formulário)
+  const [forecast, setForecast] = useState<NormalizedForecast | null>(null);
+  const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
 
-  // Carrega dados do sessionStorage
+  // Carrega dados do sessionStorage (eventData + forecastData)
   useEffect(() => {
     const raw = sessionStorage.getItem('eventData') || sessionStorage.getItem('locationData');
     if (raw) {
@@ -61,6 +66,22 @@ export default function Resultado() {
         if (isStoredEventData(parsed)) setEventData(parsed);
       } catch { /* noop */ }
     }
+    // Forecast
+    try {
+      const fRaw = sessionStorage.getItem('forecastData');
+      if (fRaw) {
+        const fParsed = JSON.parse(fRaw);
+        if (fParsed && typeof fParsed === 'object' && 'metrics' in fParsed) {
+          const normalized = fParsed as NormalizedForecast;
+          setForecast(normalized);
+          // Inicializa métrica priorizando ordem conhecida
+          const order = ['temperature','rain','humidity','wind_speed','water_vapor'];
+          const keys = Object.keys(normalized.metrics || {});
+          const first = order.find(o => keys.includes(o)) || keys[0] || null;
+          if (first) setSelectedMetric(first);
+        }
+      }
+    } catch { /* ignore forecast parse errors */ }
     setMounted(true);
   }, []);
 
@@ -69,6 +90,10 @@ export default function Resultado() {
     const iso = eventData.form.hour ? `${eventData.form.date}T${eventData.form.hour}:00` : `${eventData.form.date}T00:00:00`;
     try { return new Date(iso).toLocaleString(); } catch { return eventData.form.date; }
   }, [eventData]);
+
+  // apiDateTime removido (era usado apenas para chamada de forecast) 
+
+  // Efeito de carregamento de forecast removido - será reintroduzido lendo do storage
 
   async function handleExplain() {
     if (!eventData) return;
@@ -117,6 +142,46 @@ export default function Resultado() {
     </div>
   );
 
+  function MetricCard({ name, metric }: { name: string; metric: ForecastMetric }) {
+    const title = name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const [lo, hi] = metric.interval_90;
+    const series = Array.isArray(metric.series) ? metric.series : [];
+    const unit = metric.unit || '';
+    return (
+      <Card title={title} className="flex flex-col justify-between">
+        <div className="space-y-2">
+          <p className="text-3xl font-bold tracking-tight">{formatNumber(metric.predicted)}{unit}</p>
+          <p className="text-xs text-[var(--muted-foreground)]">Intervalo 90%: {formatNumber(lo)} – {formatNumber(hi)}{unit}</p>
+          {series.length >= 4 && (
+            <MiniSparkline values={series as number[]} />
+          )}
+        </div>
+        <div className="pt-2 text-[10px] text-[var(--muted-foreground)] flex gap-2 flex-wrap">
+          {metric.probabilities && Object.keys(metric.probabilities).slice(0,4).map(k => (
+            <Badge key={k} tone="info">{k}: {Math.round(metric.probabilities![k]*100)}%</Badge>
+          ))}
+        </div>
+      </Card>
+    );
+  }
+
+  function formatNumber(n: number) {
+    if (Math.abs(n) < 0.000001) return n.toExponential(2);
+    return Number.isInteger(n) ? n.toString() : n.toFixed(2);
+  }
+
+  function MiniSparkline({ values }: { values: number[] }) {
+    if (values.length < 4) return null;
+    const min = Math.min(...values); const max = Math.max(...values); const range = max - min || 1;
+    const pts = values.map((v,i) => `${(i/(values.length-1)*100).toFixed(2)},${(100-((v-min)/range)*100).toFixed(2)}`).join(' ');
+    return (
+      <svg viewBox="0 0 100 100" className="h-16 w-full">
+        <polyline points={pts} fill="none" stroke="var(--accent)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        <polyline points={pts} fill="none" stroke="var(--accent)" strokeOpacity={0.25} strokeWidth={6} />
+      </svg>
+    );
+  }
+
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
       <header className="mb-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
@@ -135,55 +200,53 @@ export default function Resultado() {
       {!mounted && loadingUI}
 
       {mounted && (
-        <section className="grid gap-4 md:grid-cols-6 auto-rows-[160px] mb-12">
-          <Card title="Temperatura" className="md:col-span-2 flex flex-col justify-between">
-            <div className="flex flex-col items-start">
-              <span className="text-5xl font-bold leading-none">21ºC</span>
-              <span className="mt-2 text-xs text-[var(--muted-foreground)]">Estimativa Atual</span>
-            </div>
-            <div className="mt-4 flex gap-2 text-xs">
-              <Badge tone="success">Min 16ºC</Badge>
-              <Badge tone="danger">Max 27ºC</Badge>
-            </div>
-          </Card>
-
-          <Card title="Mapa" className="md:col-span-3 row-span-2 flex items-center justify-center">
-            <div className="text-center text-xs text-[var(--muted-foreground)]">
-              (Mapa ou visualização futura)
-            </div>
-          </Card>
-
-            <Card title="Chuva" className="md:col-span-1 flex flex-col items-start justify-between">
-              <div>
-                <p className="text-3xl font-bold">-2mm</p>
-                <p className="text-xs text-[var(--muted-foreground)]">Precipitação</p>
+        <section className="mb-12 space-y-6">
+          {/* loadingForecast removido nesta fase; exibição condicional simplificada */}
+          {forecast && (
+            <>
+              <div className="flex flex-wrap gap-3 items-center">
+                {Object.keys(forecast.metrics).map(key => {
+                  const active = key === selectedMetric;
+                  return (
+                    <label key={key} className={cx('cursor-pointer select-none text-xs font-medium px-3 py-1.5 rounded border flex items-center gap-2 transition',
+                      active ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow' : 'bg-[var(--background-secondary)] border-[var(--border)] hover:border-[var(--accent)]/60')
+                    }>
+                      <input
+                        type="radio"
+                        name="metric"
+                        value={key}
+                        className="hidden"
+                        checked={active}
+                        onChange={() => setSelectedMetric(key)}
+                      />
+                      <span>{key.replace(/_/g,' ')}</span>
+                    </label>
+                  );
+                })}
               </div>
-              <Badge>Baixa</Badge>
-            </Card>
-
-            <Card title="Métrica Extra" className="md:col-span-1 flex flex-col items-start justify-between">
-              <div>
-                <p className="text-xl font-semibold">Median</p>
-                <p className="text-xs text-[var(--muted-foreground)]">Valor de referência</p>
+              <div className="grid gap-4 md:grid-cols-6 auto-rows-[200px]">
+                <Card title="Mapa" className="md:col-span-3 row-span-2 flex items-center justify-center">
+                  <div className="text-center text-xs text-[var(--muted-foreground)]">(Mapa / futuro)</div>
+                </Card>
+                {selectedMetric && forecast.metrics[selectedMetric] && (
+                  <div className="md:col-span-3 col-span-3">
+                    <MetricCard name={selectedMetric} metric={forecast.metrics[selectedMetric]} />
+                  </div>
+                )}
               </div>
-              <Badge tone="info">P50</Badge>
-            </Card>
-
-            <Card title="Resumo" className="md:col-span-2 flex flex-col justify-between">
-              <p className="text-sm leading-relaxed text-[var(--foreground)]/80">
-                Esta área poderá mostrar um resumo rápido das métricas principais (temperatura, chuva, vento, umidade) com base no modelo.
-              </p>
-              <Badge tone="default">Modelo: beta</Badge>
-            </Card>
+            </>
+          )}
         </section>
       )}
 
       <section className="mb-12">
-        <Card title="Distribuições & Gráficos" footer="Gráficos reais serão integrados quando a API estiver ativa.">
-          <div className="h-40 w-full rounded bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center text-xs text-[var(--muted-foreground)]">
-            (Placeholder do gráfico)
-          </div>
-        </Card>
+          {forecast && selectedMetric && (
+          <Card title="Distribuições & Gráficos" footer="Gráficos reais serão integrados quando a API estiver ativa.">
+            <div className="h-40 w-full rounded bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center text-xs text-[var(--muted-foreground)]">
+              (Placeholder do gráfico – métrica: {selectedMetric.replace(/_/g,' ')})
+            </div>
+          </Card>
+        )}
       </section>
 
       <section className="mb-16 space-y-6">

@@ -25,7 +25,6 @@
 }
 
 [data-theme="dark"] {
-  /* Option 2: Grafite + Azul elétrico */
   --background: #111315; /* base profunda quase neutra */
   --foreground: #ECEDEE; /* texto principal alto contraste */
   --muted-foreground: #6B7280; /* cinza médio para placeholders e hints */

@@ -77,6 +77,7 @@ export function ForecastForm({ onSuccess, className }: ForecastFormProps) {
 			estado: payload.estado,
 		};
 		try {
+			// 1. Geocode
 			const res = await fetch('/api/geocode', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -90,6 +91,25 @@ export function ForecastForm({ onSuccess, className }: ForecastFormProps) {
 				savedAt: Date.now()
 			};
 			sessionStorage.setItem('eventData', JSON.stringify(eventData));
+
+			// 2. Monta datetime para previsão
+			const datetime = `${payload.date} ${payload.hour}:00`;
+
+			// 3. Chama API interna de forecast (POST)
+			const forecastRes = await fetch('/api/forecast', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ lat: geoJson?.lat, lon: geoJson?.lng, datetime })
+			});
+			if (!forecastRes.ok) {
+				console.warn('Forecast API respondeu status', forecastRes.status);
+			}
+			let forecastData: unknown = null;
+			try { forecastData = await forecastRes.json(); } catch { /* ignore parse error */ }
+			if (forecastData && typeof forecastData === 'object') {
+				try { sessionStorage.setItem('forecastData', JSON.stringify(forecastData)); } catch { /* storage failure ignored */ }
+			}
+
 			onSuccess?.(eventData);
 		} catch (e: unknown) {
 			setSubmitError(e instanceof Error ? e.message : 'Erro inesperado');

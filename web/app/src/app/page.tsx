@@ -6,6 +6,8 @@ import ForecastForm from '@/components/ForecastForm';
 
 function cx(...c: Array<string | false | null | undefined>) { return c.filter(Boolean).join(' '); }
 
+
+
 export default function Home() {
   const [showForm, setShowForm] = useState(false);
 
