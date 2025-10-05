@@ -2,13 +2,15 @@ import { NextRequest } from 'next/server';
 import { normalizeForecast, RawForecastAPIResponse } from '../../../../types/forecast';
 import { headers } from 'next/headers';
 
-// Pequeno mock fallback reutilizando shape simplificado caso backend indisponível.
-// (Poderíamos importar de forecastService, mas mantemos desacoplado para evitar dependência cruzada client/server.)
+
 const FALLBACK: RawForecastAPIResponse = {
   data: {
     forecast: {
       temperature: { predicted: 25, interval_90: [20, 30], series: [25, 26, 27, 26, 25, 24], unit: '°C' },
       rain: { predicted: 0.001, interval_90: [0, 0.003], series: [0, 0.0005, 0.001, 0.0015, 0.0008, 0], unit: 'mm' },
+      humidity: { predicted: 0.55, interval_90: [0.40, 0.70], series: [0.55,0.56,0.54,0.53,0.57,0.55], unit: '' },
+      wind_speed: { predicted: 12, interval_90: [5, 22], series: [12,13,11,10,15,14], unit: 'km/h' },
+      water_vapor: { predicted: 28, interval_90: [18, 38], series: [28,27,29,30,28,26], unit: 'kg/m²' }
     },
     location: { lat: 0, lon: 0 },
     timestamp: new Date().toISOString().replace('T', ' ').slice(0,19),
@@ -79,17 +81,21 @@ export async function POST(req: NextRequest) {
     if (!res.ok) {
       const text = await res.text();
       console.error('Backend forecast error status', res.status, text);
-      return Response.json({ error: 'Falha backend forecast', status: res.status }, { status: 502 });
+      const fallback = normalizeForecast({ ...FALLBACK, data: { ...FALLBACK.data, location: { lat, lon }, timestamp: datetime } });
+      return Response.json({ ...fallback, source: 'mock-fallback-backend-error', backendStatus: res.status }, { status: 200 });
     }
     const json: unknown = await res.json();
     if (!json || typeof json !== 'object' || !('data' in json)) {
-      return Response.json({ error: 'Formato inesperado do backend' }, { status: 502 });
+      console.error('Formato inesperado do backend, usando fallback');
+      const fallback = normalizeForecast({ ...FALLBACK, data: { ...FALLBACK.data, location: { lat, lon }, timestamp: datetime } });
+      return Response.json({ ...fallback, source: 'mock-fallback-bad-format' }, { status: 200 });
     }
     const normalized = normalizeForecast(json as RawForecastAPIResponse);
-    return Response.json(normalized, { status: 200 });
+    return Response.json({ ...normalized, source: 'backend' }, { status: 200 });
   } catch (e: unknown) {
     console.error('Erro ao contactar backend forecast:', e);
-    return Response.json(normalizeForecast({ ...FALLBACK, data: { ...FALLBACK.data, location: { lat, lon }, timestamp: datetime } }), { status: 200, statusText: 'mock-fallback' });
+    const fallback = normalizeForecast({ ...FALLBACK, data: { ...FALLBACK.data, location: { lat, lon }, timestamp: datetime } });
+    return Response.json({ ...fallback, source: 'mock-fallback-exception' }, { status: 200 });
   }
 }
 
