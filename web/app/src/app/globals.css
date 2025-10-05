@@ -7,21 +7,16 @@
   --muted-foreground: #5a5a5a; /* placeholder/text secundário - light */
 }
 
-/* Tokens do Tailwind v4 do template */
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
 /* Tema via atributo data */
 [data-theme="light"] {
   --background: #ffffff;
   --foreground: #000000;
   --muted-foreground: #525252;
-  --background-secondary: #d1e7ff; /* fundo secundário para light */
-  --background-nav: #d1e7ff;
+  --background-secondary: #f2f2f2; /* fundo secundário para light */
+  --background-nav: #f3f3f3;
+  --accent: #133e84; /* azul primário */
+  --accent-hover: #073599; /* hover/foco */
+  --border: #E5E7EB; /* bordas sutis */
 }
 
 [data-theme="dark"] {

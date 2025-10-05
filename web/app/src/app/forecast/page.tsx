@@ -23,6 +23,7 @@ export default function Resultado() {
   const [eventData, setEventData] = useState<StoredEventData | null>(null);
   const [loadingExplain, setLoadingExplain] = useState(false);
   const [explanation, setExplanation] = useState<string | null>(null);
+  const [showExplanation, setShowExplanation] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [forecast, setForecast] = useState<NormalizedForecast | null>(null);
@@ -65,6 +66,13 @@ export default function Resultado() {
 
   async function handleExplain() {
     if (!eventData) return;
+    
+    // Se já tem explicação, apenas toggle a visibilidade
+    if (explanation) {
+      setShowExplanation(!showExplanation);
+      return;
+    }
+    
     setLoadingExplain(true);
     setExplanation(null);
     setError(null);
@@ -86,6 +94,7 @@ export default function Resultado() {
         if (!res.ok || data.ok === false) throw new Error(data.error || data.details || 'Erro na API');
         const txt = data.explanation || data.choices?.[0]?.message?.content || 'Sem resposta da IA';
         setExplanation(txt);
+        setShowExplanation(true);
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Erro inesperado');
@@ -118,13 +127,43 @@ export default function Resultado() {
       {!mounted && loadingUI}
       {mounted && forecast && (
         <section className="mb-12 space-y-6">
-          <div className="flex flex-wrap items-center gap-3">
-            <MetricSelector metrics={forecast.metrics} current={selectedMetric} onSelect={setSelectedMetric} />
-            {sourceTag && sourceTag !== 'backend' && <Badge tone="danger">Mock</Badge>}
-            {sourceTag === 'backend' && <Badge tone="success">Real</Badge>}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <MetricSelector metrics={forecast.metrics} current={selectedMetric} onSelect={setSelectedMetric} />
+              {sourceTag && sourceTag !== 'backend' && <Badge tone="danger">Mock</Badge>}
+              {sourceTag === 'backend' && <Badge tone="success">Real</Badge>}
+            </div>
+            <button
+              onClick={handleExplain}
+              disabled={loadingExplain || !eventData}
+              className={cx(
+                'relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold tracking-wide transition border backdrop-blur-sm',
+                'bg-[var(--accent)] text-[var(--accent)] border-[var(--accent)] shadow hover:bg-[var(--accent-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2',
+                'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[var(--accent)]'
+              )}
+            >
+              {loadingExplain && <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white text-sky-600" />}
+              {loadingExplain 
+                ? 'Gerando...' 
+                : explanation 
+                  ? (showExplanation ? 'Ocultar Explicação' : 'Mostrar Explicação')
+                  : 'Explicar com IA'
+              }
+            </button>
           </div>
+          {(!eventData || error) && (
+            <div className="flex flex-wrap gap-2 text-xs">
+              {!eventData && <p className="text-rose-500">Nenhum dado carregado ainda.</p>}
+              {error && <p className="text-rose-500">{error}</p>}
+            </div>
+          )}
           {selectedMetric && forecast.metrics[selectedMetric] && (
             <DetailedMetric name={selectedMetric} metric={forecast.metrics[selectedMetric]} />
+          )}
+          {explanation && showExplanation && (
+            <Card title="Explicação da IA" className="prose max-w-none dark:prose-invert">
+              <div className="prose-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: explanation }} />
+            </Card>
           )}
         </section>
       )}
@@ -144,27 +183,6 @@ export default function Resultado() {
                 </div>
               )}
             </div>
-          </Card>
-        )}
-      </section>
-
-      <section className="mb-16 space-y-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <button
-            onClick={handleExplain}
-            disabled={loadingExplain || !eventData}
-            className={cx('relative inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 bg-sky-600 text-white hover:bg-sky-700 active:bg-sky-800')}
-          >
-            {loadingExplain && <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
-            {loadingExplain ? 'Gerando explicação...' : 'Explicar com IA'}
-          </button>
-          {!eventData && <p className="text-xs text-rose-500">Nenhum dado carregado ainda.</p>}
-          {error && <p className="text-xs text-rose-500">{error}</p>}
-        </div>
-
-        {explanation && (
-          <Card title="Explicação da IA" className="prose max-w-none dark:prose-invert">
-            <div className="prose-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: explanation }} />
           </Card>
         )}
       </section>
