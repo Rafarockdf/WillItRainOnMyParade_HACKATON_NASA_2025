@@ -1,0 +1,6 @@
+Variable Code,Long Name,Detailed Description,Unit,Data Collection,Data Source Link
+QLML,Surface Specific Humidity,Instantaneous specific humidity at the land surface.,kg kg-1,MERRA-2 M2I1NXLFO,https://disc.gsfc.nasa.gov/datasets/M2I1NXLFO_5.12.4/summary
+TLML,Surface Air Temperature,Instantaneous air temperature at the surface over land.,K,MERRA-2 M2I1NXLFO,https://disc.gsfc.nasa.gov/datasets/M2I1NXLFO_5.12.4/summary
+SPEEDLML,Surface Wind Speed,Instantaneous wind speed at the land surface.,m s-1,MERRA-2 M2I1NXLFO,https://disc.gsfc.nasa.gov/datasets/M2I1NXLFO_5.12.4/summary
+PRECTOTCORR,Bias-Corrected Total Precipitation,Total precipitation that has been bias-corrected. This field is the result of correcting the model-generated precipitation totals with observation data.,kg m-2 s-1,M2T1NXFLX,https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary
+TQV,Total Precipitable Water Vapor,Total precipitable water vapor in the atmospheric column.,kg m-2,M2T1NXSLV,https://disc.gsfc.nasa.gov/datasets/M2T1NXSLV_5.12.4/summary

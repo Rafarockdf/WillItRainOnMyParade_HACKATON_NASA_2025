@@ -1,0 +1,157 @@
+@import "tailwindcss";
+
+:root {
+  /* padrão (tema claro) */
+  --background: #ffffff;
+  --foreground: #171717;
+  --muted-foreground: #5a5a5a; /* placeholder/text secundário - light */
+}
+
+/* Tema via atributo data */
+[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #000000;
+  --muted-foreground: #525252;
+  --background-secondary: #f2f2f2; /* fundo secundário para light */
+  --background-nav: #f3f3f3;
+  --accent: #133e84; /* azul primário */
+  --accent-hover: #073599; /* hover/foco */
+  --border: #E5E7EB; /* bordas sutis */
+}
+
+[data-theme="dark"] {
+  --background: #111315; /* base profunda quase neutra */
+  --foreground: #ECEDEE; /* texto principal alto contraste */
+  --muted-foreground: #6B7280; /* cinza médio para placeholders e hints */
+  --background-secondary: #1B1F22; /* blocos / cards */
+  --background-nav: #161A1D; /* navbar / header */
+  --border-color: #242A30; /* bordas sutis */
+  --accent: #3B82F6; /* azul primário */
+  --accent-hover: #2563EB; /* hover/foco */
+  --danger: #DC2626; /* ações destrutivas */
+  --success: #16A34A; /* feedback positivo */
+  --warning: #F59E0B; /* avisos */
+  --ring-color: var(--accent);
+}
+
+/* Utility tokens (light fallback if wanted later) */
+:root {
+  --accent: var(--accent, #2563EB);
+  --accent-hover: var(--accent-hover, #1D4ED8);
+  --danger: var(--danger, #DC2626);
+  --success: var(--success, #16A34A);
+  --warning: var(--warning, #F59E0B);
+  --ring-color: var(--ring-color, var(--accent));
+}
+
+/* Preferência do sistema como padrão inicial quando data-theme não está definido */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  transition: background-color .2s ease, color .2s ease;
+}
+
+/* Contraste do placeholder */
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted-foreground);
+  opacity: .9; /* melhora legibilidade em light */
+}
+
+/* ===== Animações ===== */
+@keyframes fade-in {
+  from { opacity: 0 }
+  to { opacity: 1 }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(8px); opacity: 0 }
+  to { transform: translateY(0); opacity: 1 }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0 }
+  100% { background-position: 200% 0 }
+}
+
+.animate-fade-in { animation: fade-in .35s ease-out both }
+.animate-slide-up { animation: slide-up .35s ease-out both }
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12), rgba(0,0,0,0.06));
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+.dark .skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+}
+
+.card {
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color, color-mix(in srgb, var(--foreground) 12%, transparent));
+  border-radius: .75rem;
+  transition: box-shadow .2s ease, border-color .2s ease, transform .2s ease;
+}
+.card:hover { box-shadow: 0 6px 18px rgba(0,0,0,.18) }
+.dark .card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.55) }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .125rem .5rem;
+  border-radius: 9999px;
+  font-size: .75rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 20%, transparent);
+}
+
+/* Buttons (basic utility) */
+.btn-primary {
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  color: #fff;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  font-weight: 500;
+  font-size: .875rem;
+  display: inline-flex;
+  gap: .5rem;
+  align-items: center;
+  justify-content: center;
+  transition: background .25s ease, box-shadow .25s ease, transform .15s ease;
+}
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-primary:active { transform: translateY(1px); }
+.btn-primary:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 2px; }
+
+.btn-outline {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  font-size: .875rem;
+  font-weight: 500;
+  display: inline-flex;
+  gap: .5rem;
+  align-items: center;
+  transition: background .2s ease, color .2s ease;
+}
+.btn-outline:hover { background: color-mix(in srgb, var(--accent) 15%, transparent); }
+.btn-outline:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 2px; }
+
+.badge-success { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
+.badge-danger { background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
+.badge-warning { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); }
+
+/* Scrollbar refine (dark) */
+.dark ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+.dark ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--accent) 65%, transparent); }
