@@ -14,15 +14,24 @@ export function DetailedMetric({ name, metric }: { name: string; metric: Forecas
   const label = metricLabels[name] || name.replace(/_/g,' ');
   const [lo, hi] = metric.interval_90;
   const unit = metric.unit || '';
-  const series = Array.isArray(metric.series) ? metric.series as number[] : [];
-  const avg = series.length ? series.reduce((a,b)=>a+b,0)/series.length : metric.predicted;
+  let series: number[] = [];
+  if (Array.isArray(metric.series)) {
+    series = metric.series as number[];
+  } else if (
+    metric.series &&
+    typeof metric.series === 'object' &&
+    Array.isArray((metric.series as any).values)
+  ) {
+    series = (metric.series as any).values as number[];
+  }
+  const avgSafe = series.length > 0 ? series.reduce((a, b) => a + b, 0) / series.length : undefined;
   const min = series.length ? Math.min(...series) : metric.interval_90[0];
   const max = series.length ? Math.max(...series) : metric.interval_90[1];
   const statItems = [
     { k: 'Probability', v: `95%` },
     { k: 'Mín', v: `${formatNumber(min)}${unit}` },
     { k: 'Máx', v: `${formatNumber(max)}${unit}` },
-    { k: 'Pontos', v: series.length ? series.length.toString() : '—' }
+    { k: 'Avarage', v: avgSafe !== undefined ? `${formatNumber(avgSafe)}${unit}` : '-' }
   ];
   return (
     <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background-secondary)]/60 p-6 shadow-sm">

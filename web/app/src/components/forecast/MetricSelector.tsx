@@ -17,7 +17,9 @@ export function MetricSelector({ metrics, current, onSelect }: MetricSelectorPro
             key={k}
             onClick={() => onSelect(k)}
             className={cx('inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold tracking-wide transition border backdrop-blur-sm',
-              active ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow' : 'bg-[var(--background-secondary)]/70 border-[var(--border)] hover:border-[var(--accent)]/60')}
+              active 
+                ? 'bg-[var(--accent)] text-[var(--accent)] border-[var(--accent)] shadow [&_svg]:text-[var(--accent)]' 
+                : 'bg-[var(--background-secondary)]/70 border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent)]/60 hover:bg-[var(--background-secondary)]')}
           >
             {metricIcon[k] || metricIcon._default || <Info className="h-4 w-4" />}
             <span>{metricLabels[k] || k.replace(/_/g,' ')}</span>

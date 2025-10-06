@@ -52,9 +52,10 @@ def salvar_previsao_no_banco(lat, lon, date, resultado_json):
 def salvar_modelo_no_banco(lat, lon, tipo, modelo):
     """
     Serializa e salva o modelo Prophet treinado no banco de dados PostgreSQL.
+    Para modelo global, lat/lon devem ser None.
     Args:
-        lat (float): Latitude do local
-        lon (float): Longitude do local
+        lat (float|None): Latitude do local ou None para global
+        lon (float|None): Longitude do local ou None para global
         tipo (str): Tipo do modelo (ex: 'temperature', 'humidity', etc)
         modelo (Prophet): Objeto Prophet treinado
     """
@@ -63,11 +64,11 @@ def salvar_modelo_no_banco(lat, lon, tipo, modelo):
     try:
         with conn.cursor() as cur:
             cur.execute('''
-                INSERT INTO modelos_treinados (lat, lon, tipo, modelo_pickle)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (lat, lon, tipo)
+                INSERT INTO modelos_treinados (tipo, modelo_pickle)
+                VALUES (%s, %s)
+                ON CONFLICT (tipo)
                 DO UPDATE SET modelo_pickle = EXCLUDED.modelo_pickle;
-            ''', (lat, lon, tipo, modelo_serializado))
+            ''', (tipo, modelo_serializado))
         conn.commit()
     finally:
         conn.close()
@@ -75,9 +76,10 @@ def salvar_modelo_no_banco(lat, lon, tipo, modelo):
 def buscar_modelo_no_banco(lat, lon, tipo):
     """
     Busca e desserializa o modelo Prophet treinado do banco de dados PostgreSQL.
+    Para modelo global, lat/lon devem ser None.
     Args:
-        lat (float): Latitude do local
-        lon (float): Longitude do local
+        lat (float|None): Latitude do local ou None para global
+        lon (float|None): Longitude do local ou None para global
         tipo (str): Tipo do modelo (ex: 'temperature', 'humidity', etc)
     Returns:
         Prophet ou None: Objeto Prophet treinado ou None se não encontrado
@@ -87,8 +89,8 @@ def buscar_modelo_no_banco(lat, lon, tipo):
         with conn.cursor() as cur:
             cur.execute('''
                 SELECT modelo_pickle FROM modelos_treinados
-                WHERE lat = %s AND lon = %s AND tipo = %s
-            ''', (lat, lon, tipo))
+                WHERE tipo = %s
+            ''', (tipo,))
             result = cur.fetchone()
             if result and result[0]:
                 return pickle.loads(result[0])

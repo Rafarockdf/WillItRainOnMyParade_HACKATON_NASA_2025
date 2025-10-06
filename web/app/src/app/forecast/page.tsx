@@ -10,6 +10,9 @@ import { MiniSparkline } from '../../components/forecast/MiniSparkline';
 import { cx } from '../../lib/cx';
 import GraphLine from './graph_line';
 import  ClassifyWeather  from './classify_weather';
+
+import { DownloadIcon } from 'lucide-react';
+
 interface StoredLocation {
   lat?: number; lng?: number; formattedAddress?: string; cidade?: string; pais?: string;
 }
@@ -24,11 +27,42 @@ export default function Resultado() {
   const [eventData, setEventData] = useState<StoredEventData | null>(null);
   const [loadingExplain, setLoadingExplain] = useState(false);
   const [explanation, setExplanation] = useState<string | null>(null);
+  const [showExplanation, setShowExplanation] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [forecast, setForecast] = useState<NormalizedForecast | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
   const [sourceTag, setSourceTag] = useState<string | null>(null);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+
+  const handleDownload = () => {
+    setShowDownloadModal(true);
+  };
+
+  const handleDownloadConfirm = async () => {
+    try {
+        const data = sessionStorage.getItem('forecastData');
+        if (!data) throw new Error('No forecast data available for download.');
+        const res = await fetch('/api/download', { method: 'POST', body: data });
+        if (!res.ok) throw new Error(`Erro ao baixar: ${res.status}`);
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'forecast-data.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setShowDownloadModal(false);
+    } catch (error) {
+        console.error('Erro ao baixar CSV:', error);
+        setShowDownloadModal(false);
+    }
+  };
+
+  const handleDownloadCancel = () => {
+    setShowDownloadModal(false);
+  };
 
   useEffect(() => {
     const raw = sessionStorage.getItem('eventData') || sessionStorage.getItem('locationData');
@@ -66,6 +100,13 @@ export default function Resultado() {
 
   async function handleExplain() {
     if (!eventData) return;
+    
+    // Se já tem explicação, apenas toggle a visibilidade
+    if (explanation) {
+      setShowExplanation(!showExplanation);
+      return;
+    }
+    
     setLoadingExplain(true);
     setExplanation(null);
     setError(null);
@@ -89,6 +130,7 @@ export default function Resultado() {
         if (!res.ok || data.ok === false) throw new Error(data.error || data.details || 'Erro na API');
         const txt = data.explanation || data.choices?.[0]?.message?.content || 'Sem resposta da IA';
         setExplanation(txt);
+        setShowExplanation(true);
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Erro inesperado');
@@ -108,7 +150,7 @@ export default function Resultado() {
       <header className="mb-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <ClassifyWeather/>
-          <p className="text-sm text-[var(--muted-foreground)]">Previsão & insight gerado por IA para o seu evento.</p>
+          <p className="text-sm text-[var(--muted-foreground)]">AI-generated prediction & insight for your event.</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Badge tone="info">Data: {displayDate}</Badge>
@@ -122,27 +164,69 @@ export default function Resultado() {
       {!mounted && loadingUI}
       {mounted && forecast && (
         <section className="mb-12 space-y-6">
-          <div className="flex flex-wrap items-center gap-3">
-            <MetricSelector metrics={forecast.metrics} current={selectedMetric} onSelect={setSelectedMetric} />
-            {sourceTag && sourceTag !== 'backend' && <Badge tone="danger">Mock</Badge>}
-            {sourceTag === 'backend' && <Badge tone="success">Real</Badge>}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <MetricSelector metrics={forecast.metrics} current={selectedMetric} onSelect={setSelectedMetric} />
+              {sourceTag && sourceTag !== 'backend' && <Badge tone="danger">Mock</Badge>}
+              {sourceTag === 'backend' && <Badge tone="success">Real</Badge>}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+            <button
+                onClick={handleDownload}
+                className={cx(
+                'relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold tracking-wide transition border backdrop-blur-sm',
+                'bg-[var(--accent)] text-[var(--accent)] border-[var(--accent)] shadow hover:bg-[var(--accent-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2',
+                'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[var(--accent)]'
+              )}
+            >
+                <DownloadIcon className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleExplain}
+              disabled={loadingExplain || !eventData}
+              className={cx(
+                'relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold tracking-wide transition border backdrop-blur-sm',
+                'bg-[var(--accent)] text-[var(--accent)] border-[var(--accent)] shadow hover:bg-[var(--accent-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2',
+                'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[var(--accent)]'
+              )}
+            >
+              {loadingExplain && <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white text-sky-600" />}
+              {loadingExplain 
+                ? 'Generating...' 
+                : explanation 
+                  ? (showExplanation ? 'Ocult Explanation' : 'Show Explanation')
+                  : 'Explain With AI'
+              }
+            </button>
+            </div>
           </div>
+          {(!eventData || error) && (
+            <div className="flex flex-wrap gap-2 text-xs">
+              {!eventData && <p className="text-rose-500">No data loaded yet.</p>}
+              {error && <p className="text-rose-500">{error}</p>}
+            </div>
+          )}
           {selectedMetric && forecast.metrics[selectedMetric] && (
             <DetailedMetric name={selectedMetric} metric={forecast.metrics[selectedMetric]} />
+          )}
+          {explanation && showExplanation && (
+            <Card title="Explicação da IA" className="prose max-w-none dark:prose-invert">
+              <div className="prose-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: explanation }} />
+            </Card>
           )}
         </section>
       )}
 
       <section className="mb-14">
         {forecast && (
-          <Card title="Gráfico Principal" footer="Atualmente apenas temperatura possui série completa; outras métricas exibirão placeholder.">
+          <Card title="Forecast throughout the day" footer="Atualmente apenas temperatura possui série completa; outras métricas exibirão placeholder.">
             <div className="h-60 w-full relative overflow-hidden rounded-lg flex items-center justify-center">
               {/* Chamada dinâmica do gráfico conforme a métrica selecionada */}
               {selectedMetric && (
                 <GraphLine
                   key={selectedMetric}
                   metric={selectedMetric as any}
-                  label={selectedMetric === 'temperature' ? 'Temperatura' : selectedMetric === 'humidity' ? 'Umidade' : selectedMetric === 'rain' ? 'Chuva' : selectedMetric === 'wind_speed' ? 'Vento' : selectedMetric === 'water_vapor' ? 'Vapor de Água' : selectedMetric}
+                  label={selectedMetric === 'temperature' ? 'Temperature' : selectedMetric === 'humidity' ? 'Humidity' : selectedMetric === 'rain' ? 'Rain' : selectedMetric === 'wind_speed' ? 'Wind' : selectedMetric === 'water_vapor' ? 'Water Vapor' : selectedMetric}
                   unit={selectedMetric === 'temperature' ? '°C' : selectedMetric === 'humidity' ? '%' : selectedMetric === 'rain' ? 'mm/h' : selectedMetric === 'wind_speed' ? 'km/h' : selectedMetric === 'water_vapor' ? 'mm' : ''}
                 />
               )}
@@ -151,30 +235,47 @@ export default function Resultado() {
         )}
       </section>
 
-      <section className="mb-16 space-y-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <button
-            onClick={handleExplain}
-            disabled={loadingExplain || !eventData}
-            className={cx('relative inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 bg-sky-600 text-white hover:bg-sky-700 active:bg-sky-800')}
-          >
-            {loadingExplain && <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
-            {loadingExplain ? 'Gerando explicação...' : 'Explicar com IA'}
-          </button>
-          {!eventData && <p className="text-xs text-rose-500">Nenhum dado carregado ainda.</p>}
-          {error && <p className="text-xs text-rose-500">{error}</p>}
-        </div>
-
-        {explanation && (
-          <Card title="Explicação da IA" className="prose max-w-none dark:prose-invert">
-            <div className="prose-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: explanation }} />
-          </Card>
-        )}
-      </section>
-
       <footer className="pb-10 text-center text-[10px] text-[var(--muted-foreground)]">
         Interface protótipo • Hackathon NASA 2025 • Ajustes visuais pendentes da API real
       </footer>
+
+      {/* Modal de Confirmação de Download */}
+      {showDownloadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
+              Confirm Download
+            </h3>
+            <div className="space-y-3 mb-6 text-sm text-gray-600 dark:text-gray-300">
+              <p className="font-medium">The file will contain:</p>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>NASA (MERRA-2) variable data</li>
+                <li>Weather forecasts for the event</li>
+                <li>Location and date information</li>
+                <li>Confidence metrics and ranges</li>
+              </ul>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                Format: CSV • Estimated size: ~10-50 KB
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleDownloadCancel}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDownloadConfirm}
+                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition-colors flex items-center gap-2"
+              >
+                <DownloadIcon className="h-4 w-4" />
+                Dowload CSV
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

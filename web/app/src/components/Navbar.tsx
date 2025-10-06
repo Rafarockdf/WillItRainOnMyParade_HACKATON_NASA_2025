@@ -10,7 +10,7 @@ export default function Navbar() {
         <nav className="w-full flex items-center justify-between py-4 px-8 bg-[var(--background-nav)] text-[var(--foreground)] border-b border-[color-mix(in_srgb,var(--foreground)_12%,transparent)]/50 backdrop-blur supports-[backdrop-filter]:bg-[color-mix(in_srgb,var(--background-nav)_85%,transparent)] transition-colors fixed top-0 z-50">
             <div className="flex items-center space-x-4">
                 <CloudRain className="h-6 w-6" aria-hidden="true" />
-                <span className="text-lg font-semibold">Previsão Certa</span>
+                <span className="text-lg font-semibold">The Chess Forecasters</span>
             </div>
             <div className="flex space-x-4 items-center">
                         <Link href="/" aria-label="Home" className="hover:opacity-80 transition-colors">

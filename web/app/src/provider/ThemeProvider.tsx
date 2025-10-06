@@ -11,10 +11,17 @@ export default function ThemeProvider() {
     if (stored === "light" || stored === "dark") {
       setTheme(stored);
       document.documentElement.setAttribute("data-theme", stored);
+      // Adiciona/remove classe 'dark' para Tailwind
+      if (stored === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
     } else {
       // inherit system preference initially
       setTheme(null);
       document.documentElement.removeAttribute("data-theme");
+      document.documentElement.classList.remove("dark");
     }
   }, []);
 
@@ -22,6 +29,12 @@ export default function ThemeProvider() {
     const current = document.documentElement.getAttribute("data-theme") as Theme | null;
     const next: Theme = current === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
+    // Adiciona/remove classe 'dark' para Tailwind
+    if (next === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
     localStorage.setItem("theme", next);
     setTheme(next);
   }

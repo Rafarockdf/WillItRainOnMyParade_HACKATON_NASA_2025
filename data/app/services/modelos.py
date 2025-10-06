@@ -161,3 +161,24 @@ def modelo(df_completed,date):
     # Salva a previsão no banco para reutilização futura
     salvar_previsao_no_banco(lat, lon, date, json_output)
     return json_output
+
+def get_or_train_global_model(tipo, df):
+    modelo = buscar_modelo_no_banco(None, None, tipo)
+    if modelo:
+        print(f"Reaproveitando modelo global Prophet para {tipo}...")
+        return modelo
+    else:
+        modelo = Prophet(
+            interval_width=0.95,
+            seasonality_mode='multiplicative',
+            daily_seasonality=True,
+            weekly_seasonality=True,
+            yearly_seasonality=True
+        )
+        modelo.add_seasonality(name='mensal', period=30.5, fourier_order=5)
+        modelo.add_seasonality(name='diaria', period=24, fourier_order=10)
+        modelo.add_regressor('lat')
+        modelo.add_regressor('lon')
+        modelo.fit(df)
+        salvar_modelo_no_banco(None, None, tipo, modelo)
+        return modelo

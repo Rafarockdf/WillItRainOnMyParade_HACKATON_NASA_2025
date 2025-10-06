@@ -30,7 +30,7 @@ export default function Home() {
         <div className="text-center space-y-4 justify-items-center transition-opacity duration-700 ease-in-out">
           <CloudRain className="h-20 w-20 text-[var(--foreground)] mx-auto" aria-hidden="true" />
           <p className="text-2xl">Will the weather cooperate with your event???</p>
-          <h1 className="text-4xl font-bold">Find out with Accurate Forecast</h1>
+          <h1 className="text-4xl font-bold">Find out with accurate forecast</h1>
           <p className="text-sm text-[var(--muted-foreground)]">Scroll down to reveal the form</p>
         </div>
       </div>

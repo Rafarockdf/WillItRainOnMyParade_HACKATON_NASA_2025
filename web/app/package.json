@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@syncfusion/ej2-base": "^31.1.22",
+    "@syncfusion/ej2-react-charts": "^31.1.22",
     "clsx": "^2.1.1",
     "lucide-react": "^0.544.0",
     "motion": "^12.23.22",

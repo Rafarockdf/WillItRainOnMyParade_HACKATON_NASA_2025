@@ -12,9 +12,9 @@ export const metricIcon: Record<string, React.ReactElement> = {
 };
 
 export const metricLabels: Record<string,string> = {
-  temperature: 'Temperatura',
-  rain: 'Chuva',
-  humidity: 'Umidade',
-  wind_speed: 'Vento',
-  water_vapor: 'Vapor d\'água'
+  temperature: 'Temperature',
+  rain: 'Rain',
+  humidity: 'Humidity',
+  wind_speed: 'Wind Speed',
+  water_vapor: 'Water Vapor'
 };
